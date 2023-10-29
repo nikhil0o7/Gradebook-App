@@ -1,11 +1,16 @@
 import { NavigationContainer } from "@react-navigation/native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, FlatList, StyleSheet, Text, View } from "react-native";
 import { createSharedElementStackNavigator } from "react-navigation-shared-element";
 import GradebookEntry from "./Grade.js";
 import HomeScreen from "./Home.js";
-import { students as gradebook } from "./gradebook.js";
+import { students as gradebook, students } from "./gradebook.js";
 import StudentProfile from "./StudentProfile.js";
+import { pushStudentsToFirebase } from "./addData.js";
+import { collection, getDocs, query } from "firebase/firestore";
+import { database as db } from "./firebaseConfig";
+import { ActivityIndicator } from "react-native";
+import { useFirebaseFetcher } from "./FirebaseFetcher.js";
 
 const Stack = createSharedElementStackNavigator();
 
@@ -49,8 +54,8 @@ export default function App() {
 }
 
 function Gradebook({ navigation }) {
+  const { data, loading, error } = useFirebaseFetcher();
   const [totalBonusPoints, setTotalBonusPoints] = useState(0);
-
   const rewardMessage = () => {
     if (totalBonusPoints >= 10) return "Pizza for everyone!";
     if (totalBonusPoints >= 5) return "Candy for everyone!";
@@ -61,34 +66,48 @@ function Gradebook({ navigation }) {
     setTotalBonusPoints((prev) => prev + 1);
   };
 
+  useEffect(() => {
+    pushStudentsToFirebase(students);
+  }, []);
+
+  if (error) {
+    return <Text>Error fetching data</Text>;
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Button title="Back" onPress={() => navigation.navigate("Home")} />
-      </View>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <Button title="Back" onPress={() => navigation.navigate("Home")} />
+          </View>
 
-      <View style={styles.titleBar}>
-        <Text
-          style={styles.titleText}
-          onPress={() => navigation.navigate("Home")}
-          sharedID="sharedTitle"
-        >
-          Z101: Gradebook
-        </Text>
-      </View>
-      <FlatList
-        data={gradebook}
-        renderItem={({ item }) => (
-          <GradebookEntry
-            student={item}
-            incrementTotalBonusPoints={incrementTotalBonusPoints}
-            navigation={navigation}
+          <View style={styles.titleBar}>
+            <Text
+              style={styles.titleText}
+              onPress={() => navigation.navigate("Home")}
+              sharedID="sharedTitle"
+            >
+              Z101: Gradebook
+            </Text>
+          </View>
+          <FlatList
+            data={data}
+            renderItem={({ item }) => (
+              <GradebookEntry
+                student={item}
+                incrementTotalBonusPoints={incrementTotalBonusPoints}
+                navigation={navigation}
+              />
+            )}
+            keyExtractor={(item) => item.name}
           />
-        )}
-        keyExtractor={(item) => item.name}
-      />
-      {totalBonusPoints >= 5 && (
-        <Text style={styles.rewardMessage}>{rewardMessage()}</Text>
+          {totalBonusPoints >= 5 && (
+            <Text style={styles.rewardMessage}>{rewardMessage()}</Text>
+          )}
+        </>
       )}
     </View>
   );
