@@ -1,12 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import Constants from "expo-constants";
-
-const { apiKey } = Constants.manifest2.extra;
-
+import { API_KEY } from "@env";
 const firebaseConfig = {
-  apiKey: apiKey,
+  apiKey: API_KEY,
   authDomain: "gradebook-4a87b.firebaseapp.com",
   projectId: "gradebook-4a87b",
   storageBucket: "gradebook-4a87b.appspot.com",
